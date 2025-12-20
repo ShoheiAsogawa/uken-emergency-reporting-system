@@ -209,7 +209,6 @@ export default function TradeGamingApp() {
     const profitFactor = grossLoss === 0 ? grossProfit : grossProfit / grossLoss;
     const avgWin = wins > 0 ? grossProfit / wins : 0;
     const avgLoss = losses > 0 ? grossLoss / losses : 0;
-    const riskReward = avgLoss > 0 ? avgWin / avgLoss : avgWin;
 
     let currentStreak = 0;
     let tempWinStreak = 0;
@@ -229,7 +228,7 @@ export default function TradeGamingApp() {
 
     return { 
       totalTrades, wins, losses, winRate, totalPnL, averagePnL, profitFactor,
-      grossProfit, grossLoss, avgWin, avgLoss, riskReward, currentStreak
+      grossProfit, grossLoss, avgWin, avgLoss, currentStreak
     };
   }, [filteredDashboardTrades]);
 
@@ -829,13 +828,6 @@ export default function TradeGamingApp() {
           </span>
         </Card>
 
-        {/* Risk Reward */}
-        <Card className="p-3 relative overflow-hidden border-l-4 border-l-pink-500">
-          <DualText jp="リスクリワード" en="RISK REWARD" className="text-slate-300" />
-          <span className="text-2xl font-black text-pink-400 mt-1 block">
-            1 : {stats.riskReward.toFixed(2)}
-          </span>
-        </Card>
 
         {/* Streak */}
         <Card className={`p-3 relative overflow-hidden border-l-4 ${
@@ -1168,8 +1160,19 @@ export default function TradeGamingApp() {
   };
 
   const CalendarView = () => {
-    const [currentMonth, setCurrentMonth] = useState(new Date());
+    const [currentMonth, setCurrentMonth] = useState(() => {
+      const now = new Date();
+      return new Date(now.getFullYear(), now.getMonth(), 1);
+    });
     const [selectedDayTrades, setSelectedDayTrades] = useState<Trade[]>([]);
+
+    // ローカル時間で日付文字列を生成する関数（YYYY-MM-DD形式）
+    const formatDateLocal = (date: Date): string => {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    };
 
     // 日別損益データの集計
     const dailyPnL = useMemo(() => {
@@ -1203,7 +1206,7 @@ export default function TradeGamingApp() {
       const prevMonthLastDay = new Date(year, month, 0).getDate();
       for (let i = startDayOfWeek - 1; i >= 0; i--) {
         const date = new Date(year, month - 1, prevMonthLastDay - i);
-        const dateKey = date.toISOString().split('T')[0];
+        const dateKey = formatDateLocal(date);
         days.push({
           date,
           isCurrentMonth: false,
@@ -1215,7 +1218,7 @@ export default function TradeGamingApp() {
       // 今月の日付を追加
       for (let day = 1; day <= lastDay.getDate(); day++) {
         const date = new Date(year, month, day);
-        const dateKey = date.toISOString().split('T')[0];
+        const dateKey = formatDateLocal(date);
         days.push({
           date,
           isCurrentMonth: true,
@@ -1228,7 +1231,7 @@ export default function TradeGamingApp() {
       const remainingDays = 42 - days.length; // 6週間分
       for (let day = 1; day <= remainingDays; day++) {
         const date = new Date(year, month + 1, day);
-        const dateKey = date.toISOString().split('T')[0];
+        const dateKey = formatDateLocal(date);
         days.push({
           date,
           isCurrentMonth: false,
@@ -1241,7 +1244,7 @@ export default function TradeGamingApp() {
     }, [currentMonth, dailyPnL, trades]);
 
     const handleDayClick = (date: Date) => {
-      const dateKey = date.toISOString().split('T')[0];
+      const dateKey = formatDateLocal(date);
       const dayTrades = trades.filter(t => t.date === dateKey);
       setSelectedDayTrades(dayTrades);
       setSelectedDate(dateKey);
@@ -1263,7 +1266,8 @@ export default function TradeGamingApp() {
     };
 
     const goToToday = () => {
-      setCurrentMonth(new Date());
+      const now = new Date();
+      setCurrentMonth(new Date(now.getFullYear(), now.getMonth(), 1));
       setSelectedDate(null);
       setSelectedDayTrades([]);
     };
@@ -1311,8 +1315,9 @@ export default function TradeGamingApp() {
 
             {/* 日付セル */}
             {calendarDays.map((day, index) => {
-              const dateKey = day.date.toISOString().split('T')[0];
-              const isToday = dateKey === new Date().toISOString().split('T')[0];
+              const dateKey = formatDateLocal(day.date);
+              const todayKey = formatDateLocal(new Date());
+              const isToday = dateKey === todayKey;
               const isSelected = selectedDate === dateKey;
               const hasTrades = day.tradeCount > 0;
               
@@ -1373,7 +1378,10 @@ export default function TradeGamingApp() {
               <div className="flex items-center gap-2">
                 <CalendarDays className="w-5 h-5 text-cyan-400" />
                 <h3 className="text-xl font-black text-white">
-                  {new Date(selectedDate).getMonth() + 1}月{new Date(selectedDate).getDate()}日のトレード
+                  {(() => {
+                    const [, month, day] = selectedDate.split('-').map(Number);
+                    return `${month}月${day}日のトレード`;
+                  })()}
                 </h3>
                 {dailyPnL[selectedDate] !== undefined && (
                   <span className={`text-lg font-black px-3 py-1 rounded ${
