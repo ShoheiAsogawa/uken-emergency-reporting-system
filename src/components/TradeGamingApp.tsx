@@ -15,7 +15,7 @@ import { getCurrentUserId } from '../lib/auth';
 
 // --- Types ---
 
-interface Trade {
+export interface Trade {
   id: string;
   symbol: string; 
   side: 'LONG' | 'SHORT';
@@ -832,7 +832,7 @@ export default function TradeGamingApp() {
              <ResponsiveContainer width="100%" height="100%">
                <PieChart>
                  <Pie data={symbolData} innerRadius={40} outerRadius={70} paddingAngle={5} dataKey="count">
-                   {symbolData.map((entry, index) => (
+                   {symbolData.map((_entry, index) => (
                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} stroke="rgba(0,0,0,0)" />
                    ))}
                  </Pie>
