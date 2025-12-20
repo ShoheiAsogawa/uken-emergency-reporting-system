@@ -13,68 +13,6 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 export interface Database {
   public: {
     Tables: {
-      trades: {
-        Row: {
-          id: string
-          user_id: string
-          symbol: string
-          side: 'LONG' | 'SHORT'
-          entry_price: number | null
-          exit_price: number | null
-          quantity: number | null
-          pnl: number
-          date: string
-          time: string
-          logic: string
-          timeframe: string
-          strategy: string
-          mood: string
-          image_url: string | null
-          status: 'WIN' | 'LOSS' | 'BE'
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          user_id: string
-          symbol: string
-          side: 'LONG' | 'SHORT'
-          entry_price?: number | null
-          exit_price?: number | null
-          quantity?: number | null
-          pnl: number
-          date: string
-          time: string
-          logic: string
-          timeframe: string
-          strategy: string
-          mood: string
-          image_url?: string | null
-          status: 'WIN' | 'LOSS' | 'BE'
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          user_id?: string
-          symbol?: string
-          side?: 'LONG' | 'SHORT'
-          entry_price?: number | null
-          exit_price?: number | null
-          quantity?: number | null
-          pnl?: number
-          date?: string
-          time?: string
-          logic?: string
-          timeframe?: string
-          strategy?: string
-          mood?: string
-          image_url?: string | null
-          status?: 'WIN' | 'LOSS' | 'BE'
-          created_at?: string
-          updated_at?: string
-        }
-      }
       scout_visits: {
         Row: {
           id: string

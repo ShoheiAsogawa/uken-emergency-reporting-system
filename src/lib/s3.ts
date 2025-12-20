@@ -16,9 +16,9 @@ const BUCKET_NAME = import.meta.env.VITE_AWS_S3_BUCKET_NAME || ''
  * 画像をS3にアップロード
  * @param file アップロードするファイル
  * @param userId ユーザーID
- * @param folder フォルダ名（デフォルト: 'trades'）
+ * @param folder フォルダ名（デフォルト: 'scout_visits'）
  */
-export async function uploadImageToS3(file: File, userId: string, folder: string = 'trades'): Promise<string> {
+export async function uploadImageToS3(file: File, userId: string, folder: string = 'scout_visits'): Promise<string> {
   if (!BUCKET_NAME) {
     throw new Error('S3バケット名が設定されていません')
   }
