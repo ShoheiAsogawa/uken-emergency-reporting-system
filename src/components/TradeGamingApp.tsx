@@ -1243,16 +1243,14 @@ export default function TradeGamingApp() {
       return days;
     }, [currentMonth, dailyPnL, trades]);
 
-    const handleDayClick = (date: Date, isCurrentMonth: boolean) => {
+    const handleDayClick = (date: Date) => {
       const dateKey = formatDateLocal(date);
       const dayTrades = trades.filter(t => t.date === dateKey);
       setSelectedDayTrades(dayTrades);
       setSelectedDate(dateKey);
       
-      // 前月または次月の日付をクリックした場合、その月に移動
-      if (!isCurrentMonth) {
-        setCurrentMonth(new Date(date.getFullYear(), date.getMonth(), 1));
-      }
+      // ユーザーが「今日に戻る」ボタンを押すまで、現在の月を維持
+      // 前月/次月の日付をクリックしても、その月には自動移動しない
     };
 
     const monthNames = ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'];
@@ -1330,7 +1328,7 @@ export default function TradeGamingApp() {
               return (
                 <button
                   key={index}
-                  onClick={() => handleDayClick(day.date, day.isCurrentMonth)}
+                  onClick={() => handleDayClick(day.date)}
                   className={`
                     relative p-1 md:p-2 rounded md:rounded-lg border md:border-2 transition-all duration-200 min-h-[3rem] md:min-h-0
                     ${!day.isCurrentMonth ? 'opacity-30' : ''}
