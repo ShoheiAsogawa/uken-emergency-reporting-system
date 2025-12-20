@@ -21,9 +21,11 @@
 - Node.js 18以上
 - npm または yarn
 - Supabaseアカウント
-- AWSアカウント（S3バケット）
+- AWSアカウント（S3バケット、Lambda）
 
-### 1. リポジトリのクローンと依存関係のインストール
+### クイックスタート
+
+1. **リポジトリのクローンと依存関係のインストール**
 
 ```bash
 # リポジトリをクローン
@@ -34,56 +36,26 @@ cd scout-visits-app
 npm install
 ```
 
-### 2. Supabaseのセットアップ
+2. **環境変数の設定**
 
-1. [Supabase](https://supabase.com)でプロジェクトを作成
-2. SQL Editorで `supabase/migrations/003_create_scout_visits_table.sql` を実行
-3. Settings > API から以下を取得:
-   - Project URL
-   - anon/public key
+```bash
+# .env.exampleをコピー
+cp .env.example .env
 
-### 3. AWS S3のセットアップ
-
-1. AWSコンソールでS3バケットを作成
-2. バケットポリシーでパブリック読み取りを許可（またはCloudFrontを使用）
-3. IAMユーザーを作成し、以下のポリシーを付与:
-   ```json
-   {
-     "Version": "2012-10-17",
-     "Statement": [
-       {
-         "Effect": "Allow",
-         "Action": [
-           "s3:PutObject",
-           "s3:GetObject"
-         ],
-         "Resource": "arn:aws:s3:::your-bucket-name/*"
-       }
-     ]
-   }
-   ```
-4. アクセスキーIDとシークレットアクセスキーを取得
-
-### 4. 環境変数の設定
-
-プロジェクトルートに `.env` ファイルを作成:
-
-```env
-# Supabase設定
-VITE_SUPABASE_URL=your_supabase_project_url
-VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
-
-# AWS S3設定
-VITE_AWS_REGION=ap-northeast-1
-VITE_AWS_ACCESS_KEY_ID=your_aws_access_key_id
-VITE_AWS_SECRET_ACCESS_KEY=your_aws_secret_access_key
-VITE_AWS_S3_BUCKET_NAME=your_s3_bucket_name
-
-# Gemini API設定（オプション）
-VITE_GEMINI_API_ENDPOINT=your_lambda_endpoint_url
+# .envファイルを編集して、実際の値を設定
 ```
 
-### 5. 開発サーバーの起動
+3. **詳細なセットアップ手順**
+
+詳細なセットアップ手順は [SETUP.md](./SETUP.md) を参照してください。
+
+主な手順：
+- Supabaseプロジェクトの作成とマイグレーション実行
+- AWS S3バケットの作成とIAM設定
+- AWS Lambda関数の作成（Gemini API用）
+- 環境変数の設定
+
+### 開発サーバーの起動
 
 ```bash
 npm run dev
