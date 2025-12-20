@@ -14,14 +14,17 @@ const BUCKET_NAME = import.meta.env.VITE_AWS_S3_BUCKET_NAME || ''
 
 /**
  * 画像をS3にアップロード
+ * @param file アップロードするファイル
+ * @param userId ユーザーID
+ * @param folder フォルダ名（デフォルト: 'trades'）
  */
-export async function uploadImageToS3(file: File, userId: string): Promise<string> {
+export async function uploadImageToS3(file: File, userId: string, folder: string = 'trades'): Promise<string> {
   if (!BUCKET_NAME) {
     throw new Error('S3バケット名が設定されていません')
   }
 
   const timestamp = Date.now()
-  const fileName = `${userId}/trades/${timestamp}-${file.name}`
+  const fileName = `${userId}/${folder}/${timestamp}-${file.name}`
   
   try {
     const command = new PutObjectCommand({
