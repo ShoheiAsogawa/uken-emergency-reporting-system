@@ -35,10 +35,12 @@ jobs:
       - name: Build (test)
         run: npm run build
         env:
-          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL || 'https://placeholder.supabase.co' }}
-          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY || 'placeholder_key' }}
+          VITE_LIFF_ID: ${{ secrets.VITE_LIFF_ID || 'placeholder' }}
+          VITE_API_ENDPOINT: ${{ secrets.VITE_API_ENDPOINT || 'https://placeholder.api' }}
+          VITE_COGNITO_USER_POOL_ID: ${{ secrets.VITE_COGNITO_USER_POOL_ID || 'placeholder' }}
+          VITE_COGNITO_CLIENT_ID: ${{ secrets.VITE_COGNITO_CLIENT_ID || 'placeholder' }}
           VITE_AWS_REGION: ${{ secrets.VITE_AWS_REGION || 'ap-northeast-1' }}
-          VITE_AWS_ACCESS_KEY_ID: ${{ secrets.VITE_AWS_ACCESS_KEY_ID || 'placeholder' }}
-          VITE_AWS_SECRET_ACCESS_KEY: ${{ secrets.VITE_AWS_SECRET_ACCESS_KEY || 'placeholder' }}
           VITE_AWS_S3_BUCKET_NAME: ${{ secrets.VITE_AWS_S3_BUCKET_NAME || 'placeholder' }}
+          VITE_MAP_CENTER_LAT: ${{ secrets.VITE_MAP_CENTER_LAT || '28.293' }}
+          VITE_MAP_CENTER_LNG: ${{ secrets.VITE_MAP_CENTER_LNG || '129.255' }}
 
