@@ -24,7 +24,7 @@ jobs:
           npm outdated || true
           
       - name: Create issue if updates available
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         if: failure()
         with:
           script: |
