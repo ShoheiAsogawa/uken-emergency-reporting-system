@@ -1,10 +1,10 @@
 {
-  "name": "scout-visits-app",
+  "name": "uken-emergency-reporting-system",
   "version": "1.0.0",
   "type": "module",
   "repository": {
     "type": "git",
-    "url": "https://github.com/ShoheiAsogawa/scout-visits-app.git"
+    "url": "https://github.com/ShoheiAsogawa/uken-emergency-reporting-system.git"
   },
   "author": "ShoheiAsogawa",
   "license": "MIT",
@@ -18,15 +18,21 @@
   "dependencies": {
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "recharts": "^2.10.3",
     "lucide-react": "^0.294.0",
-    "@supabase/supabase-js": "^2.38.5",
     "@aws-sdk/client-s3": "^3.490.0",
-    "@aws-sdk/s3-request-presigner": "^3.490.0"
+    "@aws-sdk/s3-request-presigner": "^3.490.0",
+    "@aws-sdk/client-dynamodb": "^3.490.0",
+    "@aws-sdk/lib-dynamodb": "^3.490.0",
+    "@aws-amplify/auth": "^6.0.0",
+    "@line/liff": "^2.24.0",
+    "react-router-dom": "^6.20.0",
+    "leaflet": "^1.9.4",
+    "react-leaflet": "^4.2.1"
   },
   "devDependencies": {
     "@types/react": "^18.2.43",
     "@types/react-dom": "^18.2.17",
+    "@types/leaflet": "^1.9.8",
     "@vitejs/plugin-react": "^4.2.1",
     "autoprefixer": "^10.4.16",
     "postcss": "^8.4.32",

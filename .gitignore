@@ -35,3 +35,6 @@ dist-ssr
 *.sln
 *.sw?
 
+# 埋め込みリポジトリ（除外）
+89-booking-system/
+
