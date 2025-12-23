@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { X, Eye, EyeOff, Edit, Save, Loader2 } from 'lucide-react';
 import type { Report, ReportStatus, ReportHistory } from '../../types';
-import { getReportHistory, updateReportStatus, updateReportMemo } from '../../lib/api';
+import { getReportContact, getReportHistory, updateReportStatus, updateReportMemo } from '../../lib/api';
 import { getSignedImageUrl } from '../../lib/s3';
+import { maskPhone } from '../../lib/format';
 
 const STATUS_OPTIONS: { value: ReportStatus; label: string }[] = [
   { value: 'pending', label: '未対応' },
@@ -29,6 +30,8 @@ export default function ReportDetail({
   const [memo, setMemo] = useState('');
   const [history, setHistory] = useState<ReportHistory[]>([]);
   const [showContact, setShowContact] = useState(false);
+  const [contactPhone, setContactPhone] = useState<string | null>(report.contact_phone || null);
+  const [isLoadingContact, setIsLoadingContact] = useState(false);
   const [photoUrls, setPhotoUrls] = useState<string[]>([]);
   const [isSaving, setIsSaving] = useState(false);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
@@ -36,6 +39,8 @@ export default function ReportDetail({
   useEffect(() => {
     loadHistory();
     loadPhotos();
+    setContactPhone(report.contact_phone || null);
+    setShowContact(false);
   }, [report.report_id]);
 
   const loadHistory = async () => {
@@ -53,11 +58,32 @@ export default function ReportDetail({
   const loadPhotos = async () => {
     try {
       const urls = await Promise.all(
-        report.photo_keys.map((key) => getSignedImageUrl(key, 3600))
+        report.photo_keys.map((key) => getSignedImageUrl(key))
       );
       setPhotoUrls(urls);
     } catch (err) {
       console.error('写真取得エラー:', err);
+    }
+  };
+
+  const handleToggleContact = async () => {
+    const next = !showContact;
+    setShowContact(next);
+    if (!next) return;
+    if (!canViewContact) return;
+    if (!report.contact_phone) return;
+    if (contactPhone && !contactPhone.startsWith('****')) return;
+
+    try {
+      setIsLoadingContact(true);
+      const res = await getReportContact(report.report_id);
+      setContactPhone(res.contact_phone);
+    } catch (err) {
+      console.error('連絡先取得エラー:', err);
+      alert('連絡先の取得に失敗しました');
+      setShowContact(false);
+    } finally {
+      setIsLoadingContact(false);
     }
   };
 
@@ -90,11 +116,6 @@ export default function ReportDetail({
     } finally {
       setIsSaving(false);
     }
-  };
-
-  const maskPhone = (phone: string): string => {
-    if (phone.length <= 4) return phone;
-    return '****' + phone.slice(-4);
   };
 
   return (
@@ -175,10 +196,14 @@ export default function ReportDetail({
                 <div className="space-y-2">
                   <div className="flex items-center gap-2">
                     <span className="text-sm">
-                      {showContact ? report.contact_phone : maskPhone(report.contact_phone)}
+                      {isLoadingContact
+                        ? '取得中...'
+                        : showContact
+                          ? (contactPhone || '')
+                          : maskPhone(contactPhone || report.contact_phone)}
                     </span>
                     <button
-                      onClick={() => setShowContact(!showContact)}
+                      onClick={handleToggleContact}
                       className="p-1 hover:bg-gray-100 rounded"
                     >
                       {showContact ? (

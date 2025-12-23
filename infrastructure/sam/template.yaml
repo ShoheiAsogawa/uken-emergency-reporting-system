@@ -1,0 +1,255 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: 宇検村 通報・防災システム（API + DynamoDB + S3 + Cognito）
+
+Parameters:
+  LineChannelId:
+    Type: String
+    Description: LINE Login Channel ID（LIFF IDトークンのaud検証に使用）
+  ApiStageName:
+    Type: String
+    Default: prod
+  PresignExpiresInSeconds:
+    Type: Number
+    Default: 3600
+  RateLimitWindowSeconds:
+    Type: Number
+    Default: 300
+  RateLimitLimit:
+    Type: Number
+    Default: 10
+
+Globals:
+  Function:
+    Runtime: nodejs18.x
+    Architectures: [x86_64]
+    Timeout: 10
+    MemorySize: 256
+
+Resources:
+  # ========= DynamoDB =========
+  ReportsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: Reports
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: report_id
+          AttributeType: S
+        - AttributeName: created_at
+          AttributeType: S
+        - AttributeName: status
+          AttributeType: S
+        - AttributeName: category
+          AttributeType: S
+      KeySchema:
+        - AttributeName: report_id
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: StatusCreatedAtIndex
+          KeySchema:
+            - AttributeName: status
+              KeyType: HASH
+            - AttributeName: created_at
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+        - IndexName: CategoryCreatedAtIndex
+          KeySchema:
+            - AttributeName: category
+              KeyType: HASH
+            - AttributeName: created_at
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+
+  ReportHistoryTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: ReportHistory
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: report_id
+          AttributeType: S
+        - AttributeName: changed_at
+          AttributeType: S
+      KeySchema:
+        - AttributeName: report_id
+          KeyType: HASH
+        - AttributeName: changed_at
+          KeyType: RANGE
+
+  SheltersTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: Shelters
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: shelter_id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: shelter_id
+          KeyType: HASH
+
+  RateLimitsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: RateLimits
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: key
+          AttributeType: S
+      KeySchema:
+        - AttributeName: key
+          KeyType: HASH
+      TimeToLiveSpecification:
+        AttributeName: ttl
+        Enabled: true
+
+  AuditLogsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: AuditLogs
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: log_id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: log_id
+          KeyType: HASH
+
+  # ========= S3 =========
+  ImagesBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+
+  # ========= Cognito（職員） =========
+  StaffUserPool:
+    Type: AWS::Cognito::UserPool
+    Properties:
+      UserPoolName: uken-staff
+      AutoVerifiedAttributes: [email]
+      UsernameAttributes: [email]
+      Policies:
+        PasswordPolicy:
+          MinimumLength: 12
+          RequireUppercase: true
+          RequireLowercase: true
+          RequireNumbers: true
+          RequireSymbols: true
+      MfaConfiguration: 'ON'
+      EnabledMfas:
+        - SOFTWARE_TOKEN_MFA
+      Schema:
+        - Name: email
+          Required: true
+          Mutable: true
+      AccountRecoverySetting:
+        RecoveryMechanisms:
+          - Name: verified_email
+            Priority: 1
+
+  StaffUserPoolClient:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      ClientName: uken-staff-web
+      UserPoolId: !Ref StaffUserPool
+      GenerateSecret: false
+      ExplicitAuthFlows:
+        - ALLOW_USER_PASSWORD_AUTH
+        - ALLOW_USER_SRP_AUTH
+        - ALLOW_REFRESH_TOKEN_AUTH
+
+  StaffGroupAdmin:
+    Type: AWS::Cognito::UserPoolGroup
+    Properties:
+      GroupName: admin
+      UserPoolId: !Ref StaffUserPool
+
+  StaffGroupOperator:
+    Type: AWS::Cognito::UserPoolGroup
+    Properties:
+      GroupName: operator
+      UserPoolId: !Ref StaffUserPool
+
+  StaffGroupViewer:
+    Type: AWS::Cognito::UserPoolGroup
+    Properties:
+      GroupName: viewer
+      UserPoolId: !Ref StaffUserPool
+
+  # ========= API/Lambda =========
+  HttpApi:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      StageName: !Ref ApiStageName
+      CorsConfiguration:
+        AllowOrigins: ['*']
+        AllowHeaders: ['content-type', 'authorization']
+        AllowMethods: ['GET', 'POST', 'PATCH', 'OPTIONS']
+
+  ApiFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: uken-emergency-api
+      CodeUri: ../../lambda-functions/dist
+      Handler: api.handler
+      Events:
+        Proxy:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /{proxy+}
+            Method: ANY
+      Environment:
+        Variables:
+          LINE_CHANNEL_ID: !Ref LineChannelId
+          COGNITO_USER_POOL_ID: !Ref StaffUserPool
+          COGNITO_REGION: !Ref AWS::Region
+          DYNAMODB_TABLE_REPORTS: !Ref ReportsTable
+          DYNAMODB_TABLE_HISTORY: !Ref ReportHistoryTable
+          DYNAMODB_TABLE_SHELTERS: !Ref SheltersTable
+          DYNAMODB_TABLE_RATE_LIMITS: !Ref RateLimitsTable
+          DYNAMODB_TABLE_AUDIT: !Ref AuditLogsTable
+          S3_BUCKET_IMAGES: !Ref ImagesBucket
+          S3_BUCKET_REGION: !Ref AWS::Region
+          PRESIGN_EXPIRES_IN_SECONDS: !Ref PresignExpiresInSeconds
+          RATE_LIMIT_WINDOW_SECONDS: !Ref RateLimitWindowSeconds
+          RATE_LIMIT_LIMIT: !Ref RateLimitLimit
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref ReportsTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref ReportHistoryTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref SheltersTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref RateLimitsTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref AuditLogsTable
+        - S3CrudPolicy:
+            BucketName: !Ref ImagesBucket
+
+Outputs:
+  ApiEndpoint:
+    Description: HTTP API endpoint
+    Value: !Sub 'https://${HttpApi}.execute-api.${AWS::Region}.amazonaws.com/${ApiStageName}'
+  CognitoUserPoolId:
+    Description: Cognito User Pool ID (staff)
+    Value: !Ref StaffUserPool
+  CognitoUserPoolClientId:
+    Description: Cognito User Pool Client ID (staff web)
+    Value: !Ref StaffUserPoolClient
+  ImagesBucketName:
+    Description: Private S3 bucket for report images
+    Value: !Ref ImagesBucket
+

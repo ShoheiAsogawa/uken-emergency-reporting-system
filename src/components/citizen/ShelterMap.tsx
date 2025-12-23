@@ -1,8 +1,7 @@
-// Leafletの型定義がインストールされていない場合の暫定実装
 import { useEffect, useState } from 'react';
-// import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
-// import { Icon } from 'leaflet';
-// import 'leaflet/dist/leaflet.css';
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import 'leaflet/dist/leaflet.css';
+import '../../lib/leaflet';
 import type { Shelter } from '../../types';
 import { getShelters } from '../../lib/api';
 import { Loader2 } from 'lucide-react';
@@ -49,25 +48,28 @@ export default function ShelterMap() {
   }
 
   return (
-    <div className="h-96 w-full rounded-lg overflow-hidden border border-gray-300 bg-gray-100">
-      <div className="h-full flex items-center justify-center">
-        <div className="text-center text-gray-500">
-          <p className="mb-2">地図を読み込み中...</p>
-          <p className="text-sm mb-4">
-            Leafletパッケージをインストールしてください: npm install leaflet react-leaflet @types/leaflet
-          </p>
-          <div className="space-y-2">
-            {shelters.map((shelter) => (
-              <div key={shelter.shelter_id} className="p-2 bg-white rounded border">
-                <div className="font-semibold">{shelter.name}</div>
-                <div className="text-xs text-gray-500">
-                  {shelter.lat.toFixed(4)}, {shelter.lng.toFixed(4)}
-                </div>
+    <div className="h-96 w-full rounded-lg overflow-hidden border border-gray-300">
+      <MapContainer
+        center={[MAP_CENTER_LAT, MAP_CENTER_LNG]}
+        zoom={13}
+        style={{ height: '100%', width: '100%' }}
+        scrollWheelZoom
+      >
+        <TileLayer
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        />
+        {shelters.map((s) => (
+          <Marker key={s.shelter_id} position={[s.lat, s.lng]}>
+            <Popup>
+              <div className="font-semibold">{s.name}</div>
+              <div className="text-xs text-gray-600">
+                {s.lat.toFixed(6)}, {s.lng.toFixed(6)}
               </div>
-            ))}
-          </div>
-        </div>
-      </div>
+            </Popup>
+          </Marker>
+        ))}
+      </MapContainer>
     </div>
   );
 }

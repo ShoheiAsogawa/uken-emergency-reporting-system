@@ -1,0 +1,25 @@
+{
+  "name": "uken-emergency-reporting-lambda",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "build": "node ./esbuild.mjs",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.864.0",
+    "@aws-sdk/client-s3": "^3.864.0",
+    "@aws-sdk/client-sns": "^3.864.0",
+    "@aws-sdk/lib-dynamodb": "^3.864.0",
+    "@aws-sdk/s3-request-presigner": "^3.864.0",
+    "jose": "^6.1.0",
+    "uuid": "^11.1.0"
+  },
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.152",
+    "esbuild": "^0.25.0",
+    "typescript": "^5.3.3"
+  }
+}
+
