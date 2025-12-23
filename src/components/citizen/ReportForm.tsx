@@ -1,5 +1,9 @@
 import { useState, useEffect } from 'react';
 import { MapPin, Camera, Loader2, Send, X } from 'lucide-react';
+import { MapContainer, Marker, TileLayer } from 'react-leaflet';
+import 'leaflet/dist/leaflet.css';
+import '../../lib/leaflet';
+import imageCompression from 'browser-image-compression';
 import type { ReportCategory, CreateReportRequest } from '../../types';
 import { createReport, getPresignedUrl } from '../../lib/api';
 
@@ -48,7 +52,7 @@ export default function ReportForm() {
   }, []);
 
   // 写真を選択
-  const handlePhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePhotoSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files) return;
 
@@ -74,8 +78,20 @@ export default function ReportForm() {
         continue;
       }
 
-      const preview = URL.createObjectURL(file);
-      newPhotos.push({ file, preview });
+      try {
+        // 画像圧縮（通信量と待ち時間の削減）
+        const compressed = await imageCompression(file, {
+          maxSizeMB: 1,
+          maxWidthOrHeight: 1600,
+          useWebWorker: true,
+        });
+        const preview = URL.createObjectURL(compressed);
+        newPhotos.push({ file: compressed, preview });
+      } catch (err) {
+        console.error('画像圧縮エラー:', err);
+        const preview = URL.createObjectURL(file);
+        newPhotos.push({ file, preview });
+      }
     }
 
     setPhotos([...photos, ...newPhotos]);
@@ -83,8 +99,9 @@ export default function ReportForm() {
 
   // 写真を削除
   const handlePhotoRemove = (index: number) => {
+    const removed = photos[index];
+    if (removed) URL.revokeObjectURL(removed.preview);
     const newPhotos = photos.filter((_, i) => i !== index);
-    newPhotos.forEach(photo => URL.revokeObjectURL(photo.preview));
     setPhotos(newPhotos);
   };
 
@@ -125,9 +142,8 @@ export default function ReportForm() {
       for (const photo of photos) {
         if (!photo.key) {
           // 署名付きURLを取得してアップロード
-          const timestamp = Date.now();
-          const key = `reports/${timestamp}-${photo.file.name}`;
-          const { url } = await getPresignedUrl(key);
+          const pseudoKey = `reports/${photo.file.name}`;
+          const { url, key } = await getPresignedUrl(pseudoKey, photo.file.type);
           
           // S3に直接アップロード
           const response = await fetch(url, {
@@ -235,6 +251,33 @@ export default function ReportForm() {
               <p className="text-xs text-gray-600 mt-2">
                 位置情報は自動取得されました。地図上でピンをドラッグして調整できます。
               </p>
+              <div className="mt-3 h-64 rounded-lg overflow-hidden border border-gray-300">
+                <MapContainer
+                  center={[lat, lng]}
+                  zoom={16}
+                  style={{ height: '100%', width: '100%' }}
+                  scrollWheelZoom
+                >
+                  <TileLayer
+                    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                  />
+                  <Marker
+                    position={[lat, lng]}
+                    draggable
+                    eventHandlers={{
+                      dragend: (e) => {
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                        const p = (e.target as any).getLatLng?.();
+                        if (p) {
+                          setLat(p.lat);
+                          setLng(p.lng);
+                        }
+                      },
+                    }}
+                  />
+                </MapContainer>
+              </div>
             </div>
           ) : (
             <div className="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded">

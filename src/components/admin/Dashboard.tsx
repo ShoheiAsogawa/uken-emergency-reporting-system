@@ -18,6 +18,7 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [staffName, setStaffName] = useState<string>('');
+  const [canViewContact, setCanViewContact] = useState<boolean>(false);
 
   useEffect(() => {
     loadStaffInfo();
@@ -32,7 +33,9 @@ export default function Dashboard() {
     try {
       const staff = await getCurrentStaff();
       if (staff) {
-        setStaffName(staff.username || '');
+        const label = staff.name || staff.username || staff.email || '';
+        setStaffName(label);
+        setCanViewContact(staff.role !== 'viewer');
       }
     } catch (err) {
       console.error('職員情報取得エラー:', err);
@@ -61,9 +64,6 @@ export default function Dashboard() {
       console.error('ログアウトエラー:', err);
     }
   };
-
-  // 権限チェック（簡易実装、実際はAPIから取得）
-  const canViewContact = true; // Operator/Adminのみ
 
   if (loading && reports.length === 0) {
     return (

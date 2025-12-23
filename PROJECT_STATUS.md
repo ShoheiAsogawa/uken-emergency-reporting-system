@@ -19,6 +19,9 @@
   - [x] CSV出力機能
 - [x] APIクライアント実装
 - [x] ルーティング設定
+- [x] 画像圧縮（クライアント側）
+- [x] 地図（Leaflet）本実装（避難所/通報/ピンドラッグ）
+- [x] Cognito認証（Amplify v6、MFA対応）
 
 ### ドキュメント
 
@@ -26,18 +29,27 @@
 - [x] セットアップガイド
 - [x] インフラ構築ガイド
 - [x] Lambda関数実装ガイド
+### バックエンド（Lambda）
+
+- [x] LIFF IDトークン検証（JWT/JWKS）
+- [x] Cognito JWT検証（JWT/JWKS、role: viewer/operator/admin）
+- [x] 通報CRUD（作成/一覧/詳細/ステータス/メモ/履歴）
+- [x] 連絡先閲覧の監査ログ（VIEW_CONTACT）
+- [x] 画像アップロード/閲覧（署名付きURL：PUT/GET）
+- [x] レート制限（DynamoDB TTLを利用したスロットリング）
+- [x] 監査ログ（AuditLogs）
+- [x] 通知フック（SNS_TOPIC_ARNが設定されている場合にPublish）
+
+### インフラ（SAM）
+
+- [x] SAMテンプレート追加（API/DynamoDB/S3/Cognito、グループ作成）
 
 ## 未実装項目 ⏳
 
 ### バックエンド（Lambda）
 
 - [ ] LIFF認証実装
-- [ ] Cognito認証実装
-- [ ] 通報CRUD API
-- [ ] 避難所管理API
-- [ ] 画像アップロード（署名付きURL発行）
-- [ ] レート制限実装
-- [ ] 監査ログ実装
+- [ ] （運用）入力検証の強化（画像MIME/拡張子/サイズのサーバ側検証、重複抑制の高度化）
 
 ### データベース（DynamoDB）
 
@@ -45,24 +57,19 @@
 - [ ] ReportHistoryテーブル作成
 - [ ] Sheltersテーブル作成
 - [ ] GSI（Global Secondary Index）設定
+ - [ ] RateLimits / AuditLogs テーブル作成
 
 ### インフラ
 
-- [ ] S3バケット作成・設定
-- [ ] CloudFront設定
-- [ ] API Gateway設定
-- [ ] WAF設定
-- [ ] Cognito User Pool作成
-- [ ] KMSキー作成
-- [ ] CloudWatchアラート設定
+- [ ] （環境構築）SAMの適用・環境分離（dev/stg/prod）
+- [ ] CloudFront/WAF/KMS/監視（CloudWatchアラート）など運用要件の拡張
 
 ### セキュリティ
 
 - [ ] レート制限（WAF + サーバ側）
 - [ ] 画像検証（形式・容量・枚数）
 - [ ] 重複抑制ロジック
-- [ ] 監査ログ記録
-- [ ] 連絡先保護（権限制御・マスク表示）
+- [ ] 連絡先保護のより厳格な運用（表示理由/表示ログの検索性など）
 
 ### 機能追加
 
@@ -97,7 +104,7 @@
 ## 注意事項
 
 - Leafletパッケージがインストールされていない場合、地図機能は動作しません
-- AWS Amplifyパッケージがインストールされていない場合、Cognito認証は暫定実装（API経由）を使用します
+- Cognito認証はAWS Amplify v6（`aws-amplify`）で実装しています
 - バックエンドAPIが実装されていない場合、フロントエンドは動作しません
 
 ## 実装優先順位

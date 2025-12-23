@@ -17,7 +17,6 @@
     "VITE_COGNITO_USER_POOL_ID": "@cognito_user_pool_id",
     "VITE_COGNITO_CLIENT_ID": "@cognito_client_id",
     "VITE_AWS_REGION": "@aws_region",
-    "VITE_AWS_S3_BUCKET_NAME": "@aws_s3_bucket_name",
     "VITE_MAP_CENTER_LAT": "@map_center_lat",
     "VITE_MAP_CENTER_LNG": "@map_center_lng"
   }

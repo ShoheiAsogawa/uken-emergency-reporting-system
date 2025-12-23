@@ -27,11 +27,8 @@ VITE_API_ENDPOINT=https://your-api-gateway-url
 VITE_COGNITO_USER_POOL_ID=ap-northeast-1_xxxxx
 VITE_COGNITO_CLIENT_ID=xxxxx
 
-# S3設定
-VITE_AWS_S3_BUCKET_NAME=uken-reports-images
+# AWSリージョン（Cognito/地図など）
 VITE_AWS_REGION=ap-northeast-1
-VITE_AWS_ACCESS_KEY_ID=xxxxx
-VITE_AWS_SECRET_ACCESS_KEY=xxxxx
 
 # 地図設定
 VITE_MAP_CENTER_LAT=28.293
@@ -112,9 +109,9 @@ cd lambda-functions
 
 ### S3アップロードエラー
 
-- バケット名とリージョンが正しいか確認
-- IAM権限が適切か確認
-- バケットポリシーを確認
+- API（`/uploads/presign`）が署名付きURLを発行できているか確認
+- Lambda実行ロールにS3への最小権限が付与されているか確認
+- 画像バケットがプライベートで、署名付きURL経由でアクセスできる設定か確認
 
 ### API接続エラー
 

@@ -75,11 +75,24 @@ export async function getShelters(): Promise<Shelter[]> {
 /**
  * 署名付きURLを取得（画像アップロード用）
  */
-export async function getPresignedUrl(key: string): Promise<{ url: string; key: string }> {
+export async function getPresignedUrl(
+  key: string,
+  contentType?: string
+): Promise<{ url: string; key: string }> {
   return apiRequest<{ url: string; key: string }>('/uploads/presign', {
     method: 'POST',
-    body: JSON.stringify({ key }),
+    body: JSON.stringify({ key, content_type: contentType }),
   }, true);
+}
+
+/**
+ * 署名付きURLを取得（画像閲覧用・職員向け）
+ */
+export async function getPresignedGetUrl(key: string): Promise<{ url: string; key: string }> {
+  return apiRequest<{ url: string; key: string }>('/uploads/presign-get', {
+    method: 'POST',
+    body: JSON.stringify({ key }),
+  });
 }
 
 // ==================== 職員向けAPI ====================
@@ -151,7 +164,17 @@ export async function updateReportMemo(
  * 通報履歴を取得
  */
 export async function getReportHistory(reportId: string) {
-  return apiRequest(`/reports/${reportId}/history`, {
+  return apiRequest<import('../types').ReportHistory[]>(`/reports/${reportId}/history`, {
+    method: 'GET',
+  });
+}
+
+/**
+ * 連絡先（平文）を取得（Operator/Adminのみ）
+ * サーバ側で監査ログ（VIEW_CONTACT）を記録する想定
+ */
+export async function getReportContact(reportId: string): Promise<{ contact_phone: string | null }> {
+  return apiRequest<{ contact_phone: string | null }>(`/reports/${reportId}/contact`, {
     method: 'GET',
   });
 }

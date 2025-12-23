@@ -1,113 +1,120 @@
-// AWS Amplify v6のインポート（パッケージがインストールされていない場合はコメントアウト）
-// import { Amplify } from 'aws-amplify';
-// import { signIn, signOut, getCurrentUser, fetchAuthSession } from 'aws-amplify/auth';
+import { Amplify } from 'aws-amplify'
+import { confirmSignIn, fetchAuthSession, getCurrentUser, signIn, signOut } from 'aws-amplify/auth'
+import type { Staff, StaffRole } from '../types'
 
-const USER_POOL_ID = import.meta.env.VITE_COGNITO_USER_POOL_ID || '';
-const CLIENT_ID = import.meta.env.VITE_COGNITO_CLIENT_ID || '';
-const REGION = import.meta.env.VITE_AWS_REGION || 'ap-northeast-1';
+const USER_POOL_ID = import.meta.env.VITE_COGNITO_USER_POOL_ID || ''
+const CLIENT_ID = import.meta.env.VITE_COGNITO_CLIENT_ID || ''
 
-// Amplify設定（パッケージがインストールされたら有効化）
-// if (USER_POOL_ID && CLIENT_ID) {
-//   Amplify.configure({
-//     Auth: {
-//       Cognito: {
-//         userPoolId: USER_POOL_ID,
-//         userPoolClientId: CLIENT_ID,
-//         region: REGION,
-//       },
-//     },
-//   });
-// }
-
-/**
- * ログイン
- * TODO: AWS Amplifyパッケージをインストール後に実装
- */
-export async function login(email: string, password: string) {
-  // 暫定実装：API経由でログイン
-  try {
-    const response = await fetch(`${import.meta.env.VITE_API_ENDPOINT}/auth/login`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password }),
-    });
-    
-    if (!response.ok) {
-      throw new Error('ログインに失敗しました');
-    }
-    
-    const data = await response.json();
-    // トークンをローカルストレージに保存（暫定）
-    if (data.token) {
-      localStorage.setItem('admin_token', data.token);
-    }
-    
-    return true;
-  } catch (error) {
-    console.error('ログインエラー:', error);
-    throw error;
+let configured = false
+function ensureConfigured() {
+  if (configured) return
+  if (!USER_POOL_ID || !CLIENT_ID) {
+    throw new Error('Cognito設定（VITE_COGNITO_USER_POOL_ID / VITE_COGNITO_CLIENT_ID）が不足しています')
   }
+  Amplify.configure({
+    Auth: {
+      Cognito: {
+        userPoolId: USER_POOL_ID,
+        userPoolClientId: CLIENT_ID,
+      },
+    },
+  })
+  configured = true
+}
+
+export type LoginResult =
+  | { done: true }
+  | { done: false; nextStep: string; requiresMfa: boolean }
+
+/**
+ * ログイン（必要ならMFAへ遷移）
+ */
+export async function login(email: string, password: string): Promise<LoginResult> {
+  ensureConfigured()
+  const res = await signIn({ username: email, password })
+  const step = res.nextStep?.signInStep || 'DONE'
+  if (step === 'DONE') return { done: true }
+  const requiresMfa =
+    step === 'CONFIRM_SIGN_IN_WITH_TOTP_CODE' ||
+    step === 'CONFIRM_SIGN_IN_WITH_SMS_CODE' ||
+    step === 'CONFIRM_SIGN_IN_WITH_EMAIL_CODE'
+  return { done: false, nextStep: step, requiresMfa }
 }
 
 /**
- * MFA認証
+ * MFA（確認コード）を送信
  */
-export async function confirmMFA(_code: string) {
-  // TODO: 実装
-  return true;
+export async function confirmMFA(code: string): Promise<LoginResult> {
+  ensureConfigured()
+  const res = await confirmSignIn({ challengeResponse: code })
+  const step = res.nextStep?.signInStep || 'DONE'
+  if (step === 'DONE') return { done: true }
+  const requiresMfa =
+    step === 'CONFIRM_SIGN_IN_WITH_TOTP_CODE' ||
+    step === 'CONFIRM_SIGN_IN_WITH_SMS_CODE' ||
+    step === 'CONFIRM_SIGN_IN_WITH_EMAIL_CODE'
+  return { done: false, nextStep: step, requiresMfa }
 }
 
-/**
- * ログアウト
- */
 export async function logout() {
-  try {
-    localStorage.removeItem('admin_token');
-    // TODO: API経由でログアウト
-  } catch (error) {
-    console.error('ログアウトエラー:', error);
-    throw error;
-  }
+  ensureConfigured()
+  await signOut()
+}
+
+function roleFromClaims(claims: Record<string, unknown>): StaffRole {
+  const explicit = claims['custom:role']
+  if (explicit === 'admin' || explicit === 'operator' || explicit === 'viewer') return explicit
+
+  const groups = claims['cognito:groups']
+  const list = Array.isArray(groups) ? groups.map(String) : typeof groups === 'string' ? groups.split(',').map((s) => s.trim()) : []
+  if (list.includes('admin')) return 'admin'
+  if (list.includes('operator')) return 'operator'
+  return 'viewer'
 }
 
 /**
- * 現在のユーザーを取得
+ * 現在の職員情報（Cognitoセッション由来）
  */
-export async function getCurrentStaff() {
+export async function getCurrentStaff(): Promise<(Partial<Staff> & { username?: string; role?: StaffRole }) | null> {
+  ensureConfigured()
   try {
-    const token = localStorage.getItem('admin_token');
-    if (!token) return null;
-    
-    // TODO: API経由でユーザー情報を取得
-    return { username: '職員' };
-  } catch (error) {
-    console.error('ユーザー取得エラー:', error);
-    return null;
+    const user = await getCurrentUser()
+    const session = await fetchAuthSession()
+    const idToken = session.tokens?.idToken
+    const claims = (idToken?.payload || {}) as Record<string, unknown>
+    return {
+      staff_id: user.userId,
+      email: typeof claims.email === 'string' ? claims.email : undefined,
+      name: typeof claims.name === 'string' ? claims.name : undefined,
+      role: roleFromClaims(claims),
+      username: user.username,
+    }
+  } catch {
+    return null
   }
 }
 
 /**
- * 認証トークンを取得（API認証用）
+ * API認証用トークン（Cognito JWT）
+ * - バックエンド側で検証しやすいので基本はIDトークンを返す
  */
 export async function getAuthToken(): Promise<string | null> {
+  ensureConfigured()
   try {
-    const token = localStorage.getItem('admin_token');
-    return token;
-  } catch (error) {
-    console.error('トークン取得エラー:', error);
-    return null;
+    const session = await fetchAuthSession()
+    return session.tokens?.idToken?.toString() || session.tokens?.accessToken?.toString() || null
+  } catch {
+    return null
   }
 }
 
-/**
- * ログイン状態を確認
- */
 export async function isAuthenticated(): Promise<boolean> {
+  ensureConfigured()
   try {
-    const token = localStorage.getItem('admin_token');
-    return !!token;
+    await getCurrentUser()
+    return true
   } catch {
-    return false;
+    return false
   }
 }
 
