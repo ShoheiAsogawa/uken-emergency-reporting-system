@@ -19,7 +19,7 @@
   "dependencies": {
     "@aws-amplify/auth": "^6.0.0",
     "@aws-sdk/client-dynamodb": "^3.490.0",
-    "@aws-sdk/client-s3": "^3.490.0",
+    "@aws-sdk/client-s3": "^3.957.0",
     "@aws-sdk/lib-dynamodb": "^3.490.0",
     "@aws-sdk/s3-request-presigner": "^3.490.0",
     "@line/liff": "^2.24.0",
