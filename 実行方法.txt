@@ -1,0 +1,45 @@
+取引履歴集計スクリプトの実行方法
+=====================================
+
+Pythonがインストールされている場合、以下の方法で実行できます：
+
+方法1: コマンドプロンプト（cmd）から実行
+-----------------------------------------
+1. コマンドプロンプトを開く（Win + R → cmd → Enter）
+2. 以下のコマンドでディレクトリに移動：
+   cd C:\Users\hoikuen\Desktop\time
+3. 以下のコマンドで実行：
+   python transaction_analyzer.py
+
+方法2: PowerShellから実行
+--------------------------
+1. PowerShellを開く（Win + X → Windows PowerShell）
+2. 以下のコマンドでディレクトリに移動：
+   cd C:\Users\hoikuen\Desktop\time
+3. 以下のコマンドで実行：
+   python transaction_analyzer.py
+   または
+   python3 transaction_analyzer.py
+
+方法3: エクスプローラーから実行
+--------------------------------
+1. C:\Users\hoikuen\Desktop\time フォルダを開く
+2. アドレスバーに「cmd」と入力してEnter
+3. 以下のコマンドで実行：
+   python transaction_analyzer.py
+
+実行結果
+--------
+実行が成功すると、以下のファイルが生成されます：
+- transaction_summary_result.txt（集計結果）
+
+トラブルシューティング
+----------------------
+- Pythonが見つからない場合：
+  1. Pythonが正しくインストールされているか確認
+  2. 環境変数PATHにPythonが追加されているか確認
+  3. 新しいコマンドプロンプト/PowerShellウィンドウを開く（環境変数の変更を反映）
+
+- エラーが発生した場合：
+  スクリプトのエラーメッセージを確認してください
+
